@@ -1,0 +1,98 @@
+---
+title: "How mandatory voting will make difference in 2019 Canadian Election"
+author: "Chixueyuan Wang 1003118538"
+date: "2020/12/22"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r,include=FALSE}
+devtools::install_github("hodgettsp/cesR")
+library(cesR)
+library(tidyverse)
+library(visdat)
+library(skimr)
+```
+
+# Introduction
+
+The process of election is known to be one of the most significant components in the democratic system. By analyzing the election results from previous years, the political parties can predict the potential outcomes and their probability of winning the election. According to Statistics Canada (February 2020), about 77 percent of Canadians participated in the voting process. Elections Canada (2019) also shows several reasons why the rest of the citizens did not vote during the election, including political reasons, electoral reasons, etc. Compared to the turnout in 2015, the participation rate does not change a lot, which fluctuates around 77% (Statistics Canada, 2020). However, as the basic procedure in the Canadian democratic election, the turnout rate may be lower than expected. After deriving the reasons for making those eligible citizens give up their ideas of voting, the leading parties may be eager to know what will be different if they can make the participation rate reach 100%. This paper will examine the election data from the 2019 Canadian Election Study (CES). In addition, a model-based statistical analysis will be provided to figure out the difference between the two situations after assuming all Canadians are required to vote.
+
+One rational way to start the analysis is to explore the linkage between different variables and how they would generate effects on the thoughts of voters. According to the 2019 CES online survey data report (Laura B et al, 2020), the dataset includes 37822 samples from the online survey, with hundreds of variables including education level, disposable income, genders and citizenship, etc. Consequently, the excellent dataset can be used to represent most of the eligible citizens in terms of their political leanings. The next step is to find the political preferences from previous Canadian Census data. The request for the Census will be that it must have a response rate larger than 95%, which can reflect the whole country’s opinion on political elections. By comparing the difference between results of election, this paper may be able to answer the original research question.
+
+This paper is intended to employ two datasets for further analysis work. The detailed modeling work will be discussed in the methodology section, including the multi-level regression model and poststratification methods. Besides, more details about the two dataset will be introduced in methodology as well. All outcomes from the model and analysis are included in the results section. In this section, tables and numbers are provided to help establish the foundation for drawing the conclusions. In the last discussion section, this paper will review the earlier works and indicate the basic directions for future study. Additionally, weaknesses and a conclusion will be displayed as well.
+
+
+```{r, include=FALSE}
+library(cesR)
+get_ces("ces2019_web")
+```
+
+```{r,include = FALSE}
+library(labelled)
+vote_data<- to_factor(ces2019_web)
+head(vote_data)
+
+summary(vote_data$cps19_votechoice)
+```
+
+```{r, include=FALSE}
+party <- c("Liberal Party", "Conservative Party", "NDP", "Bloc Quebecois", "Green Party", "People's Party")
+num <- c(8949, 8713, 4328, 1404, 2456, 605)
+votedata = data_frame(party, num)
+votes = votedata$party
+nums = votedata$num
+pct <- round(nums/sum(nums)*100)
+votes <- paste(votes, pct)
+votes <- paste(votes,"%",sep="")
+```
+
+
+# Methodology
+
+## Data description
+The dataset used for survey is the 2019 Canadian Election Study (CES). In this dataset, the authors collected hundreds of variables in terms of households' information. to be more specific, gender, year of birth, province and education level are used to construct the MRP model in this paper. Another dataset used to predict the result of election after making the votes mandatory is the 2011 National Household Survey extracted from the IPUMS International dataset. There are more than 100000 observations in the dataset, which can be used to represent the voting preference of all eligible voters. This paper will also choose age, sex, living region and education to do the prediction.
+
+## Model choice
+We can first use the logistic model to analyze the CES dataset: 
+$$ y_i = \beta_0+\beta_1  x_{age} + \beta_2 x_{gender} +\beta_3 x_{region}+\beta_4 x_{eudcation} +\epsilon$$
+
+Where $y_i\in [1,9]$ represents 9 different responses in terms of which party the interviewee voted, 1 represents the Liberal Party and 2 represented Conservative Party, etc. $\beta_0$ is the intercept parameter. $\beta_i$ shows the effects of four different explanatory variables on the party the voters would support. After summarizing the generalized linear model, the model specifics such as the intercept parameters and slope parameters can be specified. Then we can plug the real census data into our model and record each party's approval rate. Besides, the MRP model is used in the second step.The method can seperate the whole sample data into many cells with different categories. By weighting them with the size of each group vs. the size of total sample.the results for predicting the changes in elections can be more accurate.
+
+# Results
+```{r, include=FALSE}
+model <- glm(cps19_votechoice ~ cps19_gender + cps19_yob + cps19_province + cps19_education,
+            data = ces2019_web)
+summary(model)
+```
+According to the analysis on the CES data, we can focus on the two biggest parties in Canada, the Liberal Party and the Conservative Party. The pie chart in figure#1 tells that 34 percent of voters chose to support the Libral and 33 percent chose the Conservative. In addition, the slope parameter of age is -0.00208, the negative slope implicates that older people may prefer to vote for minor party. 
+
+In order to estimate the proportion of voters who will vote for which party, this paper also employs the post-stratification method. Post-stratification is a method which can divide the sample into different groups(cells) and then estimate the dependent variable for each cell. After that, I will aggregate the results by weighting them with the size of each group vs. the size of total sample.By using post-stratification, I can correct the results for predicting the non-probability based voting outcomes.
+
+Using the model described in the "Model choice" section and teh post-stratification analysis, the estimated approval voting rate for the Liberal Party, the Conservative party are 31% and 37% respectively. it is obvious that the Conservative Party surpasses the Liberal Party if the election is compulsory.
+
+```{r, echo=FALSE}
+pie(nums,labels = votes, col=rainbow(length(votes)),
+   main="Figure#1: Pie Chart of Votes")
+```
+
+
+# Discussion
+This paper tries to figure out the difference between the results of the Canadian electioin in 2019, after the voring becomes compulsory. First, a logistic model is established to evaluate how gender, age, region and education would make difference in the votes. Then the approval rates occupied by different partiese are extracted by analyzing the 2019 Canadian Election Study data. After that, the paper introduced the post-stratification method and the MRP model to analyze the census data, in order to get the estimated approval rates for the parties when the voting is mandatory. Finally the two sets of rates are compared to see the differences in results.
+
+The results tell us that when the eligible voters can choose not to vote during the election, the final results can be really different. In our analysis, the difference in approval rate for the Conservative party is approximately 4%, which is a relatively large difference. Besides, after making the voting compulsory, the Conservative party will win the election instead of the Liberal Party.
+
+One of the weaknesses of the analysis is that it is hard to identify which dataset to be used as the census data, whcih can represent most Canadians' thoughts in terms of election.Apart from that, the size of variables included in the model are much more smaller than the complex real situation. The furhter step for persuing a more accurate analysis is to introduce more and more explanatory variables and try getting the response from those eligible voters who answered "I don't know" in the survey.
+
+# Reference
+1. Election Canada. (2019). Turnout and Reasons for Not Voting: October 21, 2019, Federal Election: Results from the Labour Force Survey Supplement. Available at https://www.elections.ca/content.aspx?section=res&dir=rec/eval/pes2019/lfs&document= index&lang=e
+2. Laura B, S. et al.. (May 1, 2020)2019 Canadian Election Study – Online Survey. Available at:
+https://dataverse.harvard.edu/dataset.xhtml?persistentId=doi:10.7910/DVN/DUS88V
+3. Statistics Canada. (February 6, 2020). Reasons for not voting in the federal election, October 21, 2019. Available at: https://www150.statcan.gc.ca/n1/daily-quotidien/200226/dq200226b-eng.htm
+4. IPUMS International. 2011 Household Survey. Available at https://international.ipums.org/international-action/sample_details/country/ca#tab_ca2011a
+
